@@ -1,4 +1,5 @@
 import pickle
+import numpy
 import pandas as pd
 import seaborn as sns
 import torch
@@ -27,7 +28,7 @@ def load_dataset(train=True):
         dataset,
         batch_size=64,
         num_workers=0,
-        shuffle=True
+        shuffle=train
     )
     return dataloader
 
@@ -39,6 +40,7 @@ def train_model():
     model, dictionary = cnn.train_model(model=model, dataloader=dataloader, num_epochs=10)
     print("Time spent: {:.2f}s".format(dictionary['exec_time']))
     torch.save(model.state_dict(), "./modelo/pneumonia.pt")
+    save_stats(dictionary)
 
 def test_model():
     dataloader = load_dataset(train=False)
@@ -49,11 +51,11 @@ def test_model():
     dictionary = cnn.test_model(model=model, dataloader=dataloader)
     classes = list(dataloader.dataset.class_to_idx.keys())
     dictionary['classes'] = classes
+    dictionary = {**load_stats(), **dictionary}
     save_stats(dictionary)
     show_stats(dictionary)
 
 def save_stats(dictionary):
-    print(dictionary)
     pickle_out = open("dict.pickle", "wb")
     pickle.dump(dictionary, pickle_out)
     pickle_out.close()
@@ -63,15 +65,18 @@ def load_stats():
     return pickle.load(pickle_in)
 
 def show_stats(dictionary):
-    print("\n__________________________________________________\n")
     classes = dictionary['classes']
     matrix = dictionary['confusion_matrix']
     dataframe = pd.DataFrame(data=matrix, index=classes, columns=classes)
-    print("Accuracy = {:.2f}\n".format(100*(dictionary['correct']/dictionary['total_size'])))
+    correct = numpy.trace(matrix)
+    total = matrix.sum()
+    print("\n__________________________________________________\n")
+    print("Accuracy = {:.2f}\n".format(100*(correct/total)))
     print(dataframe)
+    print("\n__________________________________________________\n")
+
     sns.heatmap(dataframe, cmap="Blues")
     plt.title("Actual X Predicted")
-    print("\n__________________________________________________\n")
     plt.show()
 
 def show_image(dataloader, index):
@@ -84,6 +89,19 @@ def show_image(dataloader, index):
     plt.show()
 
 def assert_image(dataloader, index):
-    show_image(dataloader, index)
+    model = cnn.Net()
+    model.load_state_dict(torch.load("./modelo/pneumonia.pt"))
+    model.to(cnn.get_device())
+    model.eval()
 
-test_model()
+    image = dataloader.dataset[index][0]
+    image = image.to(cnn.get_device())
+    image = image[None]
+    image = image.type('torch.FloatTensor')
+    predictated = cnn.assert_image(model, image)
+    class_map = dict(map(reversed, dataloader.dataset.class_to_idx.items()))
+    print(class_map[predictated])
+    show_image(dataloader, index)
+    return predictated
+
+assert_image(load_dataset(train=False), 0)

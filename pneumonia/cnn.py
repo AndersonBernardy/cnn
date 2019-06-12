@@ -19,7 +19,7 @@ class Net(nn.Module):
 
         self.fc1 = nn.Linear(14400, 360)
         self.fc2 = nn.Linear(360, 90)
-        self.fc3 = nn.Linear(90, 10)
+        self.fc3 = nn.Linear(90, 2)
 
     def forward(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), 2)
@@ -72,10 +72,6 @@ def test_model(model, dataloader):
     print("Testing")
 
     dictionary = {}
-    correct = 0
-    incorrect = 0
-    total = 0
-
     confusion_matrix = numpy.zeros((2, 2), dtype=numpy.long)
 
     for _, (image, label) in enumerate(dataloader):
@@ -90,13 +86,10 @@ def test_model(model, dataloader):
         for x in range(len(predictated)):
             confusion_matrix[label[x]][predictated[x]] += 1
 
-        total += label.size(0)
-        correct = numpy.trace(confusion_matrix)
-        incorrect = total - correct
-
-    dictionary['incorrect'] = incorrect
-    dictionary['correct'] = correct
-    dictionary['total_size'] = total
     dictionary['confusion_matrix'] = confusion_matrix
-
     return dictionary
+
+def assert_image(model, image):
+    assertion = model(image)
+    _, predictated = torch.max(assertion, 1)
+    return predictated.data.cpu().numpy()[0]
