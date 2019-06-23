@@ -52,15 +52,17 @@ def load_stats():
 def show_stats(dictionary):
     classes = dictionary['classes']
     matrix = dictionary['confusion_matrix']
+    exec_time = dictionary['exec_time']
     dataframe = pd.DataFrame(data=matrix, index=classes, columns=classes)
     correct = numpy.trace(matrix)
     total = matrix.sum()
     print("\n__________________________________________________\n")
     print("Accuracy = {:.2f}\n".format(100*(correct/total)))
+    print("Execution Time = {:.2f}\n".format(exec_time))
     print(dataframe)
     print("\n__________________________________________________\n")
 
-    sns.heatmap(dataframe, cmap="Blues")
+    sns.heatmap(dataframe, cmap="Blues", annot=True, fmt="d")
     plt.title("Actual X Predicted")
     plt.show()
 
@@ -89,4 +91,4 @@ def assert_image(dataloader, index):
     show_image(dataloader, index)
     return predictated
 
-assert_image(load_dataset(train=False), 7512)
+# assert_image(load_dataset(train=False), 7512)

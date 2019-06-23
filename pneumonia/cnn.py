@@ -5,9 +5,9 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
+DEVICE = ('cuda' if torch.cuda.is_available else 'cpu')
+
 def get_device():
-    #DEVICE = ('cuda' if torch.cuda.is_available else 'cpu')
-    DEVICE = 'cpu'
     return DEVICE
 
 class Net(nn.Module):
